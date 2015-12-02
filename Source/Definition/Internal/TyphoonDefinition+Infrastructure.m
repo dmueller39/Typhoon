@@ -15,6 +15,7 @@
 TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
 
 #import "TyphoonDefinition+Infrastructure.h"
+#import "TyphoonDefinition+Namespacing.h"
 #import "TyphoonConfigPostProcessor.h"
 #import "TyphoonResource.h"
 #import "TyphoonMethod.h"
@@ -35,8 +36,7 @@ TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
     return [[TyphoonDefinition alloc] initWithClass:clazz key:key];
 }
 
-+ (instancetype)configDefinitionWithName:(NSString *)fileName
-{
++ (instancetype)withConfigName:(NSString *)fileName {
     return [self withClass:[TyphoonConfigPostProcessor class] configuration:^(TyphoonDefinition *definition) {
         [definition injectMethod:@selector(useResourceWithName:) parameters:^(TyphoonMethod *method) {
             [method injectParameterWith:fileName];
@@ -45,7 +45,7 @@ TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
     }];
 }
 
-+ (instancetype)configDefinitionWithName:(NSString *)fileName bundle:(NSBundle *)fileBundle {
++ (instancetype)withConfigName:(NSString *)fileName bundle:(NSBundle *)fileBundle {
     return [self withClass:[TyphoonConfigPostProcessor class] configuration:^(TyphoonDefinition *definition) {
         [definition injectMethod:@selector(useResourceWithName:bundle:) parameters:^(TyphoonMethod *method) {
             [method injectParameterWith:fileName];
@@ -55,37 +55,13 @@ TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
     }];
 }
 
-+ (instancetype)configDefinitionWithPath:(NSString *)filePath
-{
++ (instancetype)withConfigPath:(NSString *)filePath {
     return [self withClass:[TyphoonConfigPostProcessor class] configuration:^(TyphoonDefinition *definition) {
         [definition injectMethod:@selector(useResourceAtPath:) parameters:^(TyphoonMethod *method) {
             [method injectParameterWith:filePath];
         }];
         definition.key = [NSString stringWithFormat:@"%@-%@", NSStringFromClass(definition.class), [filePath lastPathComponent]];
     }];
-}
-
-//-------------------------------------------------------------------------------------------
-#pragma mark - Initialization & Destruction
-
-- (id)initWithClass:(Class)clazz key:(NSString *)key
-{
-    self = [super init];
-    if (self) {
-        _type = clazz;
-        _injectedProperties = [[NSMutableSet alloc] init];
-        _injectedMethods = [[NSMutableOrderedSet alloc] init];
-        _key = [key copy];
-        _scope = TyphoonScopeObjectGraph;
-        self.autoInjectionVisibility = TyphoonAutoInjectVisibilityDefault;
-        [self validateRequiredParametersAreSet];
-    }
-    return self;
-}
-
-- (id)init
-{
-    return [self initWithClass:nil key:nil];
 }
 
 - (BOOL)isCandidateForInjectedClass:(Class)clazz includeSubclasses:(BOOL)includeSubclasses
@@ -109,7 +85,6 @@ TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
 
 }
 
-
 - (void)setProcessed:(BOOL)processed
 {
     _processed = processed;
@@ -120,19 +95,26 @@ TYPHOON_LINK_CATEGORY(TyphoonDefinition_Infrastructure)
     return _processed;
 }
 
-//-------------------------------------------------------------------------------------------
-#pragma mark - Private Methods
+#pragma mark - Deprecated methods
 
-- (void)validateRequiredParametersAreSet
++ (instancetype)configDefinitionWithName:(NSString *)fileName
 {
-    if (_type == nil) {
-        [NSException raise:NSInvalidArgumentException format:@"Property 'clazz' is required."];
-    }
+    TyphoonDefinition *configDefinition = [self withConfigName:fileName];
+    [configDefinition applyGlobalNamespace];
+    return configDefinition;
+}
 
-    BOOL hasAppropriateSuper = [_type isSubclassOfClass:[NSObject class]] || [_type isSubclassOfClass:[NSProxy class]];
-    if (!hasAppropriateSuper) {
-        [NSException raise:NSInvalidArgumentException format:@"Subclass of NSProxy or NSObject is required."];
-    }
++ (instancetype)configDefinitionWithName:(NSString *)fileName bundle:(NSBundle *)fileBundle {
+    TyphoonDefinition *configDefinition = [self withConfigName:fileName bundle:fileBundle];
+    [configDefinition applyGlobalNamespace];
+    return configDefinition;
+}
+
++ (instancetype)configDefinitionWithPath:(NSString *)filePath
+{
+    TyphoonDefinition *configDefinition = [self withConfigPath:filePath];
+    [configDefinition applyGlobalNamespace];
+    return configDefinition;
 }
 
 @end

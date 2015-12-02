@@ -23,6 +23,7 @@
 #import "ClassWithConstructor.h"
 #import "TyphoonInstancePostProcessorMock.h"
 #import "TyphoonInjections.h"
+#import "OCLogTemplate.h"
 #import "MediocreQuest.h"
 
 static NSString *const DEFAULT_QUEST = @"quest";
@@ -74,7 +75,7 @@ static NSString *const DEFAULT_QUEST = @"quest";
 
     @try {
         Knight *knight = [_componentFactory componentForKey:@"knight"];
-        NSLog(@"Knight: %@", knight);
+        LogInfo(@"Knight: %@", knight);
         XCTFail(@"Should have thrown exception");
     }
     @catch (NSException *e) {
@@ -192,7 +193,7 @@ static NSString *const DEFAULT_QUEST = @"quest";
 - (void)test_post_processor_registration
 {
     [_componentFactory registerDefinition:[TyphoonDefinition withClass:[TyphoonComponentFactoryPostProcessorStubImpl class]]];
-    XCTAssertEqual([[_componentFactory registry] count], 0);
+    XCTAssertEqual([[_componentFactory registry] count], (NSUInteger)0);
     XCTAssertEqual([[_componentFactory definitionPostProcessors] count], internalPostProcessorsCount + 1); //Attached + internal processors
 }
 
@@ -215,8 +216,8 @@ static NSString *const DEFAULT_QUEST = @"quest";
 - (void)test_component_post_processor_registration
 {
     [_componentFactory registerDefinition:[TyphoonDefinition withClass:[TyphoonInstancePostProcessorMock class]]];
-    XCTAssertEqual([[_componentFactory registry] count], 0);
-    XCTAssertEqual([[_componentFactory instancePostProcessors] count], 1);
+    XCTAssertEqual([[_componentFactory registry] count], (NSUInteger)0);
+    XCTAssertEqual([[_componentFactory instancePostProcessors] count], (NSUInteger)1);
 }
 
 - (void)test_component_post_processors_applied_in_order
@@ -224,9 +225,9 @@ static NSString *const DEFAULT_QUEST = @"quest";
     TyphoonInstancePostProcessorMock*processor1 = [[TyphoonInstancePostProcessorMock alloc] initWithOrder:INT_MAX];
     TyphoonInstancePostProcessorMock*processor2 = [[TyphoonInstancePostProcessorMock alloc] initWithOrder:0];
     TyphoonInstancePostProcessorMock*processor3 = [[TyphoonInstancePostProcessorMock alloc] initWithOrder:INT_MIN];
-    [_componentFactory addInstancePostProcessor:processor1];
-    [_componentFactory addInstancePostProcessor:processor2];
-    [_componentFactory addInstancePostProcessor:processor3];
+    [_componentFactory attachInstancePostProcessor:processor1];
+    [_componentFactory attachInstancePostProcessor:processor2];
+    [_componentFactory attachInstancePostProcessor:processor3];
     [_componentFactory registerDefinition:[TyphoonDefinition withClass:[Knight class]]];
 
     __block NSMutableArray *orderedApplied = [[NSMutableArray alloc] initWithCapacity:3];
@@ -350,7 +351,7 @@ static NSString *const DEFAULT_QUEST = @"quest";
         [definition setScope:TyphoonScopeObjectGraph];
     }]];
     [_componentFactory load];
-    XCTAssertEqual([[_componentFactory singletons] count], 1);
+    XCTAssertEqual([[_componentFactory singletons] count], (NSUInteger)1);
 }
 
 - (void)test_load_weakSingleton
@@ -439,9 +440,9 @@ static NSString *const DEFAULT_QUEST = @"quest";
 
 - (void)test_prevents_instantiation_of_abstract_definition
 {
-    TyphoonDefinition *definition = [TyphoonDefinition withClass:[NSURL class] configuration:^(TyphoonDefinition *definition) {
-        definition.key = @"anAbstractDefinition";
-        definition.abstract = YES;
+    TyphoonDefinition *definition = [TyphoonDefinition withClass:[NSURL class] configuration:^(TyphoonDefinition *innerDefinition) {
+        innerDefinition.key = @"anAbstractDefinition";
+        innerDefinition.abstract = YES;
     }];
 
     [_componentFactory registerDefinition:definition];

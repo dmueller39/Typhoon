@@ -16,6 +16,10 @@
 #import "Quest.h"
 #import "TyphoonLoopedCollaboratingAssemblies.h"
 #import "MediocreQuest.h"
+#import "OCLogTemplate.h"
+#import "TyphoonPatcher.h"
+#import "TyphoonInstancePostProcessorMock.h"
+#import "NSNullTypeConverter.h"
 
 @interface TyphoonAssemblyTests : XCTestCase
 @end
@@ -30,7 +34,7 @@
     [assembly activate];
 
     XCTAssertTrue([[assembly knight] isKindOfClass:[Knight class]]);
-    NSLog(@"Knight: %@", [assembly knight]);
+    LogInfo(@"Knight: %@", [assembly knight]);
 }
 
 - (void)test_activated_assembly_returns_activated_collaborators
@@ -40,7 +44,7 @@
     ]];
 
     id<Quest> quest = assembly.collaboratingAssembly.quests.environmentDependentQuest;
-    NSLog(@"Got quest: %@", quest);
+    LogInfo(@"Got quest: %@", quest);
     XCTAssertTrue([quest conformsToProtocol:@protocol(Quest)]);
 }
 
@@ -145,24 +149,12 @@
     }
 }
 
-- (void)test_before_activation_raises_exception_when_invoking_attachPostProcessor
-{
-    @try {
-        MiddleAgesAssembly *assembly = [MiddleAgesAssembly assembly];
-        [assembly attachPostProcessor:nil];
-        XCTFail(@"Should have thrown exception");
-    }
-    @catch (NSException *e) {
-        XCTAssertEqualObjects(@"attachPostProcessor: requires the assembly to be activated.", [e description]);
-    }
-}
-
 - (void)test_before_activation_raises_exception_when_invoking_subscription
 {
     @try {
         MiddleAgesAssembly *assembly = [MiddleAgesAssembly assembly];
         id result = assembly[@"test"];
-        NSLog(@"%@", result);
+        LogInfo(@"%@", result);
         XCTFail(@"Should have thrown exception");
     }
     @catch (NSException *e) {
@@ -195,5 +187,62 @@
     [assembly makeDefault];
 }
 
+- (void)test_nil_definition_with_injection_hooks
+{
+    MiddleAgesAssembly *assembly = [MiddleAgesAssembly assembly];
+    [assembly activate];
+
+    @try {
+        Knight *knight = [assembly occasionallyNilKnightWithBeforeInjections];
+        [knight description];
+    }
+    @catch (NSException *e) {
+        XCTAssertNil(e);
+    }
+    
+    @try {
+        Knight *knight = [assembly occasionallyNilKnightWithAfterInjections];
+        [knight description];
+    }
+    @catch (NSException *e) {
+        XCTAssertNil(e);
+    }
+    
+    @try {
+        Knight *knight = [assembly occasionallyNilKnightWithMethodInjections];
+        [knight description];
+    }
+    @catch (NSException *e) {
+        XCTAssertNil(e);
+    }
+}
+
+- (void)test_before_activation_preattaches_infrastructure_components
+{
+    MiddleAgesAssembly *assembly = [MiddleAgesAssembly assembly];
+    
+    TyphoonPatcher *patcher = [TyphoonPatcher new];
+    [assembly attachDefinitionPostProcessor:patcher];
+    
+    TyphoonInstancePostProcessorMock *instancePostProcessor = [TyphoonInstancePostProcessorMock new];
+    [assembly attachInstancePostProcessor:instancePostProcessor];
+    
+    NSNullTypeConverter *typeConverter = [NSNullTypeConverter new];
+    [assembly attachTypeConverter:typeConverter];
+    
+    TyphoonBlockComponentFactory *factory = [[TyphoonBlockComponentFactory alloc] initWithAssembly:assembly];
+    
+    NSArray *attachedDefinitionPostProcessors = factory.definitionPostProcessors;
+    BOOL isPatcherAttached = [attachedDefinitionPostProcessors containsObject:patcher];
+    
+    NSArray *attachedInstancePostProcessors = factory.instancePostProcessors;
+    BOOL isInstancePostProcessorAttached = [attachedInstancePostProcessors containsObject:instancePostProcessor];
+    
+    BOOL isTypeConverterAttached = [factory.typeConverterRegistry converterForType:[typeConverter supportedType]] != nil;
+    
+    XCTAssertTrue(isPatcherAttached);
+    XCTAssertTrue(isInstancePostProcessorAttached);
+    XCTAssertTrue(isTypeConverterAttached);
+}
 
 @end

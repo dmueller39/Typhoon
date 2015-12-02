@@ -39,7 +39,7 @@
     return self;
 }
 
-- (id)initWithQuest:(id <Quest>)quest favoriteDamsels:(NSArray *)favoriteDamsels;
+- (id)initWithQuest:(id <Quest>)quest favoriteDamsels:(NSArray *)favoriteDamsels
 {
     self = [super init];
     if (self) {
@@ -47,6 +47,11 @@
         _favoriteDamsels = favoriteDamsels;
     }
     return self;
+}
+
+- (id)initNilInstance
+{
+    return nil;
 }
 
 - (void)setFoobar:(id<NSObject>)foobar andHasHorse:(BOOL)hasHorse friends:(NSSet *)friends

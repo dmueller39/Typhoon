@@ -23,6 +23,7 @@
 #import "TyphoonUtils.h"
 #import "TyphoonRuntimeArguments.h"
 #import "TyphoonReferenceDefinition.h"
+#import "TyphoonDefinition+Namespacing.h"
 
 #import <objc/runtime.h>
 
@@ -86,6 +87,7 @@ static void AssertArgumentType(id target, SEL selector, const char *argumentType
     if ([cached isKindOfClass:[TyphoonDefinition class]]) {
         /* Set current runtime args to know passed arguments when build definition */
         ((TyphoonDefinition *) cached).currentRuntimeArguments = args;
+        [((TyphoonDefinition *) cached) applyConcreteNamespace:NSStringFromClass([self.assembly class])];
     }
 
     LogTrace(@"Did finish building definition for key: '%@'", key);
@@ -187,7 +189,7 @@ static id objc_msgSend_InjectionArguments(id target, SEL selector, NSMethodSigna
             const char *argumentType = [signature getArgumentTypeAtIndex:i + 2];
             AssertArgumentType(target, selector, argumentType, i + 2);
             id injection = InjectionForArgumentType(argumentType, i);
-            [invocation setArgument:&injection atIndex:i + 2];
+            [invocation setArgument:&injection atIndex:(NSInteger)(i + 2)];
         }
         [invocation invokeWithTarget:target];
         [invocation getReturnValue:&result];

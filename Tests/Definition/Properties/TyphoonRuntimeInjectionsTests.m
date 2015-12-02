@@ -38,7 +38,7 @@
 - (void)test_runtime_arguments
 {
     Knight *knight = [factory knightWithRuntimeDamselsRescued:@6 runtimeFoobar:@"foobar"];
-    XCTAssertEqual(knight.damselsRescued, 6);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)6);
     XCTAssertEqual(knight.foobar, @"foobar");
 }
 
@@ -49,7 +49,7 @@
     Knight *knight = [factory knightWithRuntimeDamselsRescued:@6 runtimeFoobar:(NSObject *) ^(NSString *blockArg){
         foobar = [NSString stringWithFormat:@"set from block %@",blockArg];
     }];
-    XCTAssertEqual(knight.damselsRescued, 6);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)6);
     ((void(^)(NSString *))knight.foobar)(@"arg");
     XCTAssertEqualObjects(foobar, @"set from block arg");
 }
@@ -60,8 +60,7 @@
     Mock *mock = [factory mockWithRuntimeBlock:^NSString *{
        return @"Hello";
     } andRuntimeClass:[NSString class]];
-
-    XCTAssertEqualObjects(((NSString *(^)())mock.block)(), @"Hello");
+    XCTAssertEqualObjects(((NSString *(^)(void))mock.block)(), @"Hello");
     XCTAssertEqual(mock.clazz, [NSString class]);
 
 }
@@ -71,35 +70,35 @@
 {
     Knight *knight = [factory knightWithRuntimeDamselsRescued:@3 runtimeQuestUrl:[NSURL URLWithString:@"http://google.com"]];
     XCTAssertEqualObjects([knight.quest imageUrl], [NSURL URLWithString:@"http://google.com"]);
-    XCTAssertEqual(knight.damselsRescued, 3);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)3);
 
     knight = [factory knightWithRuntimeDamselsRescued:@2 runtimeQuestUrl:[NSURL URLWithString:@"http://apple.com"]];
     XCTAssertEqualObjects([knight.quest imageUrl], [NSURL URLWithString:@"http://apple.com"]);
-    XCTAssertEqual(knight.damselsRescued, 2);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)2);
 }
 
 - (void)test_runtime_knight_with_nil
 {
     Knight *knight = [factory knightWithRuntimeDamselsRescued:nil runtimeQuestUrl:[NSURL URLWithString:@"http://google.com"]];
     XCTAssertEqualObjects([knight.quest imageUrl], [NSURL URLWithString:@"http://google.com"]);
-    XCTAssertEqual(knight.damselsRescued, 0);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)0);
 }
 
 - (void)test_runtime_knight_with_method_arg_nil
 {
     Knight *knight = [factory knightWithRuntimeDamselsRescued:@(12) runtimeQuestUrl:nil];
     XCTAssertNil([knight.quest imageUrl]);
-    XCTAssertEqual(knight.damselsRescued, 12);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)12);
 
     Knight *friend = (Knight *) knight.foobar;
-    XCTAssertEqual(friend.damselsRescued, 12);
+    XCTAssertEqual(friend.damselsRescued, (NSUInteger)12);
 }
 
 - (void)test_runtime_knight_with_method_arg_and_two_nils
 {
     Knight *knight = [factory knightWithRuntimeDamselsRescued:nil runtimeQuestUrl:nil];
     XCTAssertNil([knight.quest imageUrl]);
-    XCTAssertEqual(knight.damselsRescued, 0);
+    XCTAssertEqual(knight.damselsRescued, (NSUInteger)0);
 }
 
 - (void)test_predefined_quest
@@ -192,14 +191,14 @@
     Mock *mock1 = [factory mockWithRuntimeClass:[NSString class]];
 
     XCTAssertTrue(mock1.clazz == [NSString class]);
-    XCTAssertTrue([((NSString*(^)()) mock1.block)() isEqualToString:@"Hello"]);
+    XCTAssertTrue([((NSString*(^)(void)) mock1.block)() isEqualToString:@"Hello"]);
 
     Mock *mock2 = [factory mockWithRuntimeBlock:^NSString * {
         return @"Hello2";
     }];
 
     XCTAssertTrue(mock2.clazz == [NSString class]);
-    XCTAssertTrue([((NSString*(^)()) mock2.block)() isEqualToString:@"Hello2"]);
+    XCTAssertTrue([((NSString*(^)(void)) mock2.block)() isEqualToString:@"Hello2"]);
 }
 
 - (void)test_runtime_argument_shortcut_point_to_shortcut
